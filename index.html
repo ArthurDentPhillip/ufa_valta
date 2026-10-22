@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Маршрутизатор доставки зоотоваров — Уфа и Башкортостан</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+            min-height: 100vh;
+            color: #1a1a2e;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        /* Шапка */
+        header {
+            margin-bottom: 28px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .logo-icon svg {
+            width: 28px;
+            height: 28px;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: #64748b;
+            font-size: 15px;
+            margin-top: 4px;
+            padding-left: 60px;
+        }
+        
+        /* Панель управления */
+        .control-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .search-wrapper {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+        
+        .search-wrapper svg {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            color: #94a3b8;
+        }
+        
+        #addressInput {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s;
+            outline: none;
+        }
+        
+        #addressInput:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        
+        .toggle-wrapper:hover {
+            border-color: #3b82f6;
+        }
+        
+        .toggle-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #3b82f6;
+            cursor: pointer;
+        }
+        
+        .toggle-wrapper span {
+            font-size: 14px;
+            font-weight: 500;
+            color: #334155;
+        }
+        
+        /* Основной контент */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Карта */
+        .map-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .map-container {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            height: 500px;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .target-info {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 16px 20px;
+            border-radius: 12px;
+            display: none;
+        }
+        
+        .target-info.visible {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .target-info h3 {
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .target-info p {
+            color: #1e3a8a;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .target-info .city-badge {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+        
+        /* Панель результатов */
+        .results-panel {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        
+        .results-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .results-panel::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        
+        .results-panel::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+        
+        .empty-state p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Секции результатов */
+        .result-section {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            animation: fadeIn 0.4s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-header {
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-header .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .section-before .section-header {
+            background: #eff6ff;
+            color: #1e40af;
+            border-bottom: 1px solid #dbeafe;
+        }
+        .section-before .dot { background: #3b82f6; }
+        
+        .section-near .section-header {
+            background: #f0fdf4;
+            color: #166534;
+            border-bottom: 1px solid #dcfce7;
+        }
+        .section-near .dot { background: #22c55e; }
+        
+        .section-after .section-header {
+            background: #fff7ed;
+            color: #9a3412;
+            border-bottom: 1px solid #fed7aa;
+        }
+        .section-after .dot { background: #f97316; }
+        
+        .store-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .store-item:last-child {
+            border-bottom: none;
+        }
+        
+        .store-item:hover {
+            background: #f8fafc;
+            padding-left: 20px;
+        }
+        
+        .store-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .store-address {
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+        
+        .store-city {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+        
+        .section-before .store-city { background: #dbeafe; color: #1e40af; }
+        .section-near .store-city { background: #dcfce7; color: #166534; }
+        .section-after .store-city { background: #fed7aa; color: #9a3412; }
+        
+        /* Адаптивность */
+        @media (max-width: 640px) {
+            .container { padding: 16px; }
+            h1 { font-size: 22px; }
+            .subtitle { padding-left: 0; margin-top: 8px; }
+            .control-panel { flex-direction: column; align-items: stretch; }
+            .map-container { height: 350px; }
+            .results-panel { max-height: 500px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Шапка -->
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Маршрутизатор доставки</h1>
+                </div>
+            </div>
+            <p class="subtitle">Комплектация паллет по маршруту Уфа → Стерлитамак → Салават → Ишимбай → Кумертау</p>
+        </header>
+        
+        <!-- Панель управления -->
+        <div class="control-panel">
+            <div class="search-wrapper">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input type="text" id="addressInput" placeholder="Например: Салават, ул. Ленина, 15" />
+            </div>
+            <button class="btn-primary" id="searchBtn">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                </svg>
+                <span id="btnText">Построить маршрут</span>
+            </button>
+            <label class="toggle-wrapper">
+                <input type="checkbox" id="kumertauToggle" checked />
+                <span>📍 Включить Кумертау</span>
+            </label>
+        </div>
+        
+        <!-- Основной контент -->
+        <div class="main-grid">
+            <!-- Карта -->
+            <div class="map-section">
+                <div class="map-container">
+                    <div id="map"></div>
+                </div>
+                <div class="target-info" id="targetInfo">
+                    <h3>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Целевая точка доставки
+                    </h3>
+                    <p id="targetAddress"></p>
+                    <span class="city-badge" id="targetCity"></span>
+                </div>
+            </div>
+            
+            <!-- Результаты -->
+            <div class="results-panel" id="resultsPanel">
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                    </svg>
+                    <p>Введите адрес доставки,<br>чтобы увидеть точки для комплектации паллеты</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // ====== КОНФИГУРАЦИЯ ======
+        const BASE_ROUTE = [
+            "Уфа", "Сипайлово", "Дёма", "Стерлитамак", 
+            "Салават", "Ишимбай", "Корнеевка", "Новая Отрадовка", "Кумертау"
+        ];
+        
+        const USER_AGENT = 'PetLogisticsUfaApp/1.0 (pet-logistics@example.com)';
+        
+        // ====== ИНИЦИАЛИЗАЦИЯ КАРТЫ ======
+        const map = L.map('map').setView([54.7388, 55.9721], 10);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 19
+        }).addTo(map);
+        
+        let targetMarker = null;
+        let storeMarkers = [];
+        
+        // ====== ЛОГИКА ======
+        const addressInput = document.getElementById('addressInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const btnText = document.getElementById('btnText');
+        const kumertauToggle = document.getElementById('kumertauToggle');
+        const targetInfo = document.getElementById('targetInfo');
+        const targetAddress = document.getElementById('targetAddress');
+        const targetCity = document.getElementById('targetCity');
+        const resultsPanel = document.getElementById('resultsPanel');
+        
+        function getActiveRoute() {
+            return kumertauToggle.checked 
+                ? BASE_ROUTE 
+                : BASE_ROUTE.filter(c => c !== "Кумертау");
+        }
+        
+        // Поиск по Enter
+        addressInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') searchAddress();
+        });
+        
+        searchBtn.addEventListener('click', searchAddress);
+        
+        async function searchAddress() {
+            const query = addressInput.value.trim();
+            if (!query) {
+                addressInput.focus();
+                return;
+            }
+            
+            setLoading(true);
+            clearMarkers();
+            
+            try {
+                // 1. Геокодинг адреса
+                const geoRes = await fetch(
+                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ', Башкортостан, Россия')}&format=json&limit=1`,
+                    { headers: { 'User-Agent': USER_AGENT } }
+                );
+                const geoData = await geoRes.json();
+                
+                if (!geoData.length) {
+                    alert('Адрес не найден. Попробуйте указать город и улицу.');
+                    setLoading(false);
+                    return;
+                }
+                
+                const found = geoData[0];
+                const displayName = found.display_name.toLowerCase();
+                const activeRoute = getActiveRoute();
+                const city = activeRoute.find(c => displayName.includes(c.toLowerCase())) || "Уфа";
+                
+                const target = {
+                    name: found.display_name,
+                    city: city,
+                    lat: parseFloat(found.lat),
+                    lon: parseFloat(found.lon)
+                };
+                
+                // 2. Показываем целевую точку
+                showTargetInfo(target);
+                addTargetMarker(target);
+                
+                // 3. Ищем магазины
+                await fetchStores(target.city, activeRoute);
+                
+            } catch (error) {
+                console.error(error);
+                alert('Ошибка при поиске: ' + error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        async function fetchStores(currentCity, activeRoute) {
+            const cityIndex = activeRoute.indexOf(currentCity);
+            const beforeCities = activeRoute.slice(0, cityIndex);
+            const afterCities = activeRoute.slice(cityIndex + 1);
+            
+            resultsPanel.innerHTML = `
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Анализируем маршрут и ищем зоомагазины...</p>
+                </div>
+            `;
+            
+            const searchCity = async (city) => {
+                try {
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/search?q=зоомагазин ${city} Башкортостан&format=json&limit=3`,
+                        { headers: { 'User-Agent': USER_AGENT } }
+                    );
+                    const data = await res.json();
+                    return data.map(item => ({
+                        name: item.name || item.display_name.split(',')[0].trim(),
+                        address: item.display_name,
+                        lat: parseFloat(item.lat),
+                        lon: parseFloat(item.lon),
+                        city: city
+                    }));
+                } catch (e) {
+                    return [];
+                }
+            };
+            
+            let before = [], near = [], after = [];
+            
+            // Задержка между запросами (требование Nominatim)
+            const delay = (ms) => new Promise(r => setTimeout(r, ms));
+            
+            for (const city of beforeCities) {
+                const stores = await searchCity(city);
+                before.push(...stores);
+                await delay(1100);
+            }
+            
+            near = await searchCity(currentCity);
+            await delay(1100);
+            
+            for (const city of afterCities) {
+                const stores = await searchCity(city);
+                after.push(...stores);
+                await delay(1100);
+            }
+            
+            renderResults(before, near, after, currentCity);
+            addStoreMarkers(before, near, after);
+        }
+        
+        function renderResults(before, near, after, currentCity) {
+            let html = '';
+            
+            if (before.length === 0 && near.length === 0 && after.length === 0) {
+                html = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p>Зоомагазины в базе не найдены.<br>Попробуйте другой адрес.</p>
+                    </div>
+                `;
+            } else {
+                if (before.length) html += renderSection('До этого адреса', before, 'before');
+                if (near.length) html += renderSection(`Рядом: ${currentCity}`, near, 'near');
+                if (after.length) html += renderSection('После этого адреса', after, 'after');
+            }
+            
+            resultsPanel.innerHTML = html;
+            
+            // Добавляем обработчики клика на магазины
+            document.querySelectorAll('.store-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const lat = parseFloat(item.dataset.lat);
+                    const lon = parseFloat(item.dataset.lon);
+                    const name = item.dataset.name;
+                    map.setView([lat, lon], 15);
+                    L.popup()
+                        .setLatLng([lat, lon])
+                        .setContent(`<b>${name}</b>`)
+                        .openOn(map);
+                });
+            });
+        }
+        
+        function renderSection(title, items, type) {
+            const itemsHtml = items.map(item => `
+                <div class="store-item" data-lat="${item.lat}" data-lon="${item.lon}" data-name="${item.name.replace(/"/g, '&quot;')}">
+                    <div class="store-name">${item.name}</div>
+                    <div class="store-address">${item.address}</div>
+                    <span class="store-city">${item.city}</span>
+                </div>
+            `).join('');
+            
+            return `
+                <div class="result-section section-${type}">
+                    <div class="section-header">
+                        <span class="dot"></span>
+                        ${title} (${items.length})
+                    </div>
+                    ${itemsHtml}
+                </div>
+            `;
+        }
+        
+        function showTargetInfo(target) {
+            targetAddress.textContent = target.name;
+            targetCity.textContent = `Город маршрута: ${target.city}`;
+            targetInfo.classList.add('visible');
+        }
+        
+        function addTargetMarker(target) {
+            if (targetMarker) map.removeLayer(targetMarker);
+            targetMarker = L.marker([target.lat, target.lon]).addTo(map);
+            targetMarker.bindPopup(`<b> Целевая доставка</b><br>${target.city}`).openPopup();
+            map.setView([target.lat, target.lon], 12);
+        }
+        
+        function addStoreMarkers(before, near, after) {
+            clearStoreMarkers();
+            
+            const addMarkers = (items, color) => {
+                items.forEach(item => {
+                    const marker = L.circleMarker([item.lat, item.lon], {
+                        radius: 8,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    }).addTo(map);
+                    marker.bindPopup(`<b>${item.name}</b><br>${item.city}`);
+                    storeMarkers.push(marker);
+                });
+            };
+            
+            addMarkers(before, '#3b82f6');
+            addMarkers(near, '#22c55e');
+            addMarkers(after, '#f97316');
+        }
+        
+        function clearStoreMarkers() {
+            storeMarkers.forEach(m => map.removeLayer(m));
+            storeMarkers = [];
+        }
+        
+        function clearMarkers() {
+            clearStoreMarkers();
+            if (targetMarker) {
+                map.removeLayer(targetMarker);
+                targetMarker = null;
+            }
+        }
+        
+        function setLoading(loading) {
+            searchBtn.disabled = loading;
+            btnText.textContent = loading ? 'Поиск...' : 'Построить маршрут';
+        }
+    </script>
+</body>
+</html>
